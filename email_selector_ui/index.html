@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Selector - Gabriel Kreiman</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f6f8fc;
+            color: #202124;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 400;
+            color: #5f6368;
+        }
+
+        .header h1 span {
+            color: #1a73e8;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #5f6368;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 16px;
+        }
+
+        .stat-value.kept { background: #e8f5e9; color: #1b5e20; }
+        .stat-value.discarded { background: #ffebee; color: #c62828; }
+        .stat-value.pending { background: #e3f2fd; color: #1565c0; }
+
+        .controls {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 18px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #f1f3f4;
+        }
+
+        .filter-btn.active {
+            background: #e8f0fe;
+            border-color: #1a73e8;
+            color: #1a73e8;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            padding: 10px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+
+        .export-btn {
+            padding: 10px 24px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            background: #1557b0;
+        }
+
+        .email-list {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .email-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #f1f3f4;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .email-item:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1;
+            position: relative;
+        }
+
+        .email-item.kept {
+            background: #f1f8e9;
+            border-left: 4px solid #4caf50;
+        }
+
+        .email-item.discarded {
+            background: #fafafa;
+            opacity: 0.6;
+            border-left: 4px solid #e0e0e0;
+        }
+
+        .email-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-right: 16px;
+            cursor: pointer;
+        }
+
+        .email-type {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-right: 12px;
+            font-weight: 500;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .email-type.work {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .email-type.personal {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .email-type.unknown {
+            background: #f5f5f5;
+            color: #757575;
+        }
+
+        .email-content {
+            flex: 1;
+            min-width: 0;
+            background: none;
+            border: none;
+            padding: 0;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .email-content:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+        .email-content:focus {
+            outline: 2px solid #1a73e8;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        .email-from {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .thread-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            color: #5f6368;
+            background: #e8f0fe;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .thread-indicator svg {
+            color: #1a73e8;
+        }
+
+        .email-headline {
+            font-size: 13px;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+            color: #202124;
+        }
+
+        .email-preview {
+            font-size: 12px;
+            color: #5f6368;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-time {
+            font-size: 11px;
+            color: #5f6368;
+            margin-bottom: 4px;
+        }
+
+        .email-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 16px;
+            min-width: 80px;
+        }
+
+        .email-memories {
+            font-size: 11px;
+            color: #5f6368;
+            background: #f1f3f4;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .email-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .action-btn.keep {
+            background: #4caf50;
+            color: white;
+        }
+
+        .action-btn.keep:hover {
+            background: #388e3c;
+        }
+
+        .action-btn.discard {
+            background: #f5f5f5;
+            color: #757575;
+        }
+
+        .action-btn.discard:hover {
+            background: #e0e0e0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #5f6368;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #f1f3f4;
+            border-color: #1a73e8;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 14px;
+            color: #202124;
+            font-weight: 500;
+        }
+
+        .page-range {
+            color: #5f6368;
+            font-weight: 400;
+        }
+
+        .keyboard-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 12px;
+            color: #5f6368;
+        }
+
+        .keyboard-hint kbd {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 0 4px;
+        }
+
+        /* Ignore List Bar */
+        .ignore-list-bar {
+            background: #fff8e1;
+            border-bottom: 1px solid #ffe082;
+            padding: 8px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .ignore-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #f57c00;
+        }
+
+        .ignore-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .ignore-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: #e65100;
+        }
+
+        .ignore-tag.static {
+            background: #ffe0b2;
+            border-color: #ffb74d;
+        }
+
+        .ignore-tag.domain {
+            font-style: italic;
+        }
+
+        .ignore-tag.session {
+            background: #fff8e1;
+        }
+
+        .ignore-tag button {
+            background: none;
+            border: none;
+            color: #e65100;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+            margin-left: 2px;
+        }
+
+        .ignore-tag button:hover {
+            color: #bf360c;
+        }
+
+        .ignore-empty {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .clear-ignore-btn {
+            font-size: 11px;
+            padding: 4px 10px;
+            background: none;
+            border: 1px solid #ffcc80;
+            color: #f57c00;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .clear-ignore-btn:hover {
+            background: #fff3e0;
+        }
+
+        .ignore-sender-btn {
+            background: #fff3e0 !important;
+            color: #e65100 !important;
+            border: 1px solid #ffcc80 !important;
+        }
+
+        .ignore-sender-btn:hover {
+            background: #ffe0b2 !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex !important;
+        }
+
+        .email-message-number {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1a73e8;
+            background: #e8f0fe;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 16px;
+        }
+
+        .modal-content pre {
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .modal-close {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Email Detail Modal */
+        .email-detail-modal {
+            max-width: 950px;
+            width: 95%;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        /* Top bar with tabs and controls */
+        .modal-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .modal-tab {
+            padding: 6px 16px;
+            border: none;
+            background: none;
+            font-size: 13px;
+            font-weight: 500;
+            color: #5f6368;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .modal-tab:hover {
+            background: #e8eaed;
+        }
+
+        .modal-tab.active {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .modal-top-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-type {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .modal-type.work {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .modal-type.personal {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .modal-memories {
+            font-size: 11px;
+            color: #5f6368;
+            background: #e8eaed;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #5f6368;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+            margin-left: 8px;
+        }
+
+        .modal-close-btn:hover {
+            color: #202124;
+        }
+
+        /* Compact info line */
+        .modal-info-line {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 16px;
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+            flex-shrink: 0;
+        }
+
+        .modal-subject {
+            font-size: 15px;
+            font-weight: 500;
+            color: #202124;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .modal-from {
+            font-size: 12px;
+            color: #5f6368;
+            flex-shrink: 0;
+        }
+
+        .modal-from span {
+            color: #202124;
+        }
+
+        .headlines-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .headlines-list li {
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-left: 3px solid #4caf50;
+            margin-bottom: 8px;
+            border-radius: 0 4px 4px 0;
+            font-size: 13px;
+        }
+
+        .topics-list, .people-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .topics-list span, .people-list span {
+            padding: 4px 12px;
+            background: #e3f2fd;
+            color: #1565c0;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .people-list span {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .email-preview-full {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .action-btn.large {
+            padding: 12px 32px;
+            font-size: 14px;
+        }
+
+        .action-btn.next-btn {
+            background: #f1f3f4;
+            color: #5f6368;
+        }
+
+        .action-btn.next-btn:hover {
+            background: #e8eaed;
+        }
+
+        /* Email Thread Content Styles */
+        .email-thread-section {
+            margin-bottom: 20px;
+        }
+
+        .email-thread-content {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-height: 50vh;
+            min-height: 200px;
+            overflow-y: auto;
+        }
+
+        .email-message {
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .email-message:last-child {
+            border-bottom: none;
+        }
+
+        .email-message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .email-message-from {
+            font-weight: 500;
+            color: #202124;
+        }
+
+        .email-message-date {
+            color: #5f6368;
+        }
+
+        .email-message-to {
+            font-size: 12px;
+            color: #5f6368;
+            margin-bottom: 8px;
+        }
+
+        .email-message-subject {
+            font-size: 14px;
+            font-weight: 500;
+            color: #202124;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .email-message-body {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #3c4043;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Modal Tabs */
+        .modal-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .modal-tab:hover {
+            background: #f8f9fa;
+            color: #202124;
+        }
+
+        .modal-tab.active {
+            color: #1a73e8;
+            border-bottom-color: #1a73e8;
+        }
+
+        .modal-tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            min-height: 0;
+        }
+
+        .modal-tab-content.active {
+            display: block;
+        }
+
+        .email-thread-content {
+            height: 100%;
+        }
+
+        .email-detail-modal .modal-actions {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Email Thread Selector - <span>Gabriel Kreiman</span></h1>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">Total Threads:</span>
+                <span class="stat-value" style="background: #f5f5f5; color: #333;" id="totalCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Kept:</span>
+                <span class="stat-value kept" id="keptCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Discarded:</span>
+                <span class="stat-value discarded" id="discardedCount">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Pending:</span>
+                <span class="stat-value pending" id="pendingCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="pending">Pending</button>
+        <button class="filter-btn" data-filter="kept">Kept</button>
+        <button class="filter-btn" data-filter="discarded">Discarded</button>
+        <span style="color: #dadce0; margin: 0 8px;">|</span>
+        <button class="filter-btn" data-filter="work">Work</button>
+        <button class="filter-btn" data-filter="personal">Personal</button>
+        <input type="text" class="search-box" placeholder="Search headlines..." id="searchBox">
+        <button class="export-btn" id="exportBtn">Export Selection</button>
+    </div>
+    
+    <!-- Ignore list bar hidden - edit ignore_list.json to manage ignored senders -->
+    <div class="ignore-list-bar" id="ignoreListBar" style="display: none;">
+        <span class="ignore-label">Ignored Senders:</span>
+        <div id="ignoreListContainer" class="ignore-tags">
+            <span class="ignore-empty">No ignored senders</span>
+        </div>
+        <button class="clear-ignore-btn" onclick="clearIgnoreList()" title="Clear all ignored senders">Clear All</button>
+    </div>
+
+    <div class="email-list" id="emailList">
+        <!-- Emails will be rendered here -->
+    </div>
+
+    <div class="keyboard-hint">
+        <kbd>K</kbd> Keep &nbsp;|&nbsp; <kbd>D</kbd> Discard &nbsp;|&nbsp; <kbd>↑</kbd><kbd>↓</kbd> Navigate
+    </div>
+
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h2>Export Selection</h2>
+            <p style="margin-bottom: 16px;">Your selected emails have been exported. Copy the data below:</p>
+            <pre id="exportData"></pre>
+            <button class="modal-close" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <div class="modal" id="emailModal">
+        <div class="modal-content email-detail-modal">
+            <!-- Compact header with tabs at top -->
+            <div class="modal-top-bar">
+                <div class="modal-tabs">
+                    <button class="modal-tab active" data-tab="emails" onclick="switchModalTab('emails')">
+                        Email Thread
+                    </button>
+                    <button class="modal-tab" data-tab="memories" onclick="switchModalTab('memories')">
+                        Memories
+                    </button>
+                </div>
+                <div class="modal-top-right">
+                    <span class="modal-type" id="modalType">work</span>
+                    <span class="modal-memories" id="modalMemories">5 memories</span>
+                    <button class="modal-close-btn" onclick="closeEmailModal()">×</button>
+                </div>
+            </div>
+            
+            <!-- Compact info line -->
+            <div class="modal-info-line">
+                <span class="modal-subject" id="modalSubject">Subject line here</span>
+                <span class="modal-from">From: <span id="modalFrom">sender@email.com</span></span>
+            </div>
+            
+            <!-- Email Thread Content Tab -->
+            <div id="tabEmails" class="modal-tab-content active">
+                <div id="modalEmailContent" class="email-thread-content"></div>
+            </div>
+            
+            <!-- Memories Tab -->
+            <div id="tabMemories" class="modal-tab-content">
+                <ul id="modalHeadlines" class="headlines-list"></ul>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="action-btn ignore-sender-btn" id="modalIgnoreBtn" title="Ignore all emails from this sender">🚫 Ignore Sender</button>
+                <div style="flex: 1;"></div>
+                <button class="action-btn keep large" id="modalKeepBtn">Keep This Thread</button>
+                <button class="action-btn discard large" id="modalSkipBtn">Skip</button>
+                <button class="action-btn next-btn" id="modalNextBtn">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
