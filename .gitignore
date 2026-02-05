@@ -1,0 +1,37 @@
+# Data files
+data/
+*.csv
+*.csv.gz
+*.parquet
+*.jsonl
+*.faiss
+*.npy
+
+# Large JSON data files
+emails.json
+emails_preview.json
+selected_*.json
+*_emails.json
+
+# Thread ID files
+*_thread_ids.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.env
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
