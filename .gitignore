@@ -7,14 +7,20 @@ data/
 *.faiss
 *.npy
 
-# Large JSON data files
-emails.json
-emails_preview.json
-selected_*.json
-*_emails.json
+# Large JSON data files (root)
+/emails.json
+/selected_*.json
+/*_emails.json
+
+# Large JSON data files (email_selector_ui)
+email_selector_ui/emails.json
+email_selector_ui/emails_preview.json
+email_selector_ui/selected_*.json
+email_selector_ui/*_emails.json
 
 # Thread ID files
 *_thread_ids.txt
+email_selector_ui/*_thread_ids.txt
 
 # Python
 __pycache__/
